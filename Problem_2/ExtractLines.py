@@ -95,7 +95,6 @@ def ExtractLines(RangeData, params):
 
     return alpha, r, segend, pointIdx
 
-
 def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
     '''
     This function executes a recursive line-slitting algorithm, which
@@ -136,8 +135,8 @@ def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
     alpha = np.zeros(0)
     idx = np.zeros((0, 2), dtype=np.int)
 
-    this_theta = theta[startIdx:endIdx+1]
-    this_rho = rho[startIdx:endIdx+1]
+    this_theta = theta[startIdx:endIdx]
+    this_rho = rho[startIdx:endIdx]
 
     new_alpha, new_r = FitLine( this_theta, this_rho )
     new_idx = FindSplit( this_theta, this_rho, new_alpha, new_r, params )
@@ -179,17 +178,19 @@ def FindSplit(theta, rho, alpha, r, params):
         splitIdx: idx at which to split line (return -1 if it cannot be split).
     '''
     ########## Code starts here ##########
-    n = len(theta)
-    splitIdx = -1
-    greatest_dist = 0
-    for i in range(n):
-        this_dist = np.cos( theta[i] - alpha ) * rho[i] - r
-        if this_dist > greatest_dist and this_dist >= params['LINE_POINT_DIST_THRESHOLD']:
-            greatest_dist = this_dist
-            splitIdx = i
+    # n = len(theta)
+    # splitIdx = -1
+    # greatest_dist = 0
+    # for i in range(n):
+    #     this_dist = np.cos( theta[i] - alpha ) * rho[i] - r
+    #     if this_dist > greatest_dist and this_dist >= params['LINE_POINT_DIST_THRESHOLD']:
+    #         greatest_dist = this_dist
+    #         splitIdx = i
         
-    if (splitIdx+1 < params['MIN_POINTS_PER_SEGMENT'] or n-(splitIdx+1) < params['MIN_POINTS_PER_SEGMENT']):
-        splitIdx = -1
+    # if (splitIdx+1 < params['MIN_POINTS_PER_SEGMENT'] or n-(splitIdx+1) < params['MIN_POINTS_PER_SEGMENT']):
+    #     splitIdx = -1
+
+    splitIdx = -1
     ########## Code ends here ##########
     return splitIdx
 
@@ -214,7 +215,7 @@ def FitLine(theta, rho):
         for j in range(n):
             C = C + rho[i]*rho[j]*np.cos(theta[i])*np.sin(theta[j])
             D = D + rho[i]*rho[j]*np.cos(theta[i]+theta[j])
-    
+    print(n)
     alpha = (1/2) * np.arctan2( (A-(2/n)*C) , (B-(1/n)*D) ) + (np.pi/2)
 
     for i in range(n):
@@ -246,20 +247,20 @@ def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
           merge. If it can be split, do not merge.
     '''
     ########## Code starts here ##########
-    for i in range(len(pointIdx)-1):
-        startindex = pointIdx[i,1]
-        endindex = pointIdx[i+1,2]
-        new_theta = theta[startindex:endindex+1]
-        new_rho = rho[startindex:endindex+1]
-        new_r, new_alpha = FitLine(new_theta,new_rho)
-        if -1 == FindSplit(new_theta, new_rho, new_alpha, new_r, params):
-            alphaOut = new_alpha
-            rOut = new_r
-            pointIdxOut = [startindex, endindex]
-            break
-    # alphaOut = alpha
-    # rOut = r
-    # pointIdxOut = pointIdx
+    # for i in range(len(pointIdx)-1):
+    #     startindex = pointIdx[i,0]
+    #     endindex = pointIdx[i+1,1]
+    #     new_theta = theta[startindex:endindex+1]
+    #     new_rho = rho[startindex:endindex+1]
+    #     new_r, new_alpha = FitLine(new_theta,new_rho)
+    #     if -1 == FindSplit(new_theta, new_rho, new_alpha, new_r, params):
+    #         alphaOut = new_alpha                    #should these be single values?
+    #         rOut = new_r                            #should these be single values?
+    #         pointIdxOut = [startindex, endindex]    #should these be single values?
+    #         break
+    alphaOut = []
+    rOut = []
+    pointIdxOut = []
     ########## Code ends here ##########
     return alphaOut, rOut, pointIdxOut
 
@@ -268,7 +269,7 @@ def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
 # ImportRangeData
 def ImportRangeData(filename):
 
-    data = np.genfromtxt('./Problem_2/RangeData/'+filename, delimiter=',')
+    data = np.genfromtxt('./RangeData/'+filename, delimiter=',')
     x_r = data[0, 0]
     y_r = data[0, 1]
     theta = data[1:, 0]
