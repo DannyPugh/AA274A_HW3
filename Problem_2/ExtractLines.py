@@ -10,6 +10,7 @@
 
 # Imports
 import numpy as np
+from numpy.lib.function_base import append
 from PlotFunctions import *
 
 
@@ -115,7 +116,45 @@ def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
     HINT: Call FitLine() to fit individual line segments.
     HINT: Call FindSplit() to find an index to split at.
     '''
-    ########## Code starts here ##########
+    ########## Code starts here #########
+    # r = np.zeros(0)
+    # alpha = np.zeros(0)
+    # idx = np.array([np.arange(0,180,5),np.arange(5,185,5)]).T
+
+    # len_theta = len(theta)
+    # theta_grouped = np.reshape(theta,(5,36))
+    # rho_grouped = np.reshape(rho,(5,36))
+    # for i in range(36):
+    #     this_theta_group = theta_grouped[:,i]
+    #     this_rho_group = rho_grouped[:,i]
+    #     this_alpha, this_r = FitLine(this_theta_group,this_rho_group)
+    #     alpha = np.append(alpha,this_alpha)
+    #     r = np.append(r,this_r)
+
+
+    r = np.zeros(0)
+    alpha = np.zeros(0)
+    idx = np.zeros((0, 2), dtype=np.int)
+
+    this_theta = theta[startIdx:endIdx+1]
+    this_rho = rho[startIdx:endIdx+1]
+
+    new_alpha, new_r = FitLine( this_theta, this_rho )
+    new_idx = FindSplit( this_theta, this_rho, new_alpha, new_r, params )
+
+    if new_idx != -1:
+        alpha_low, r_low, idx_low = SplitLinesRecursive(this_theta, this_rho, startIdx, new_idx, params)
+        alpha_high, r_high, idx_high = SplitLinesRecursive(this_theta, this_rho, new_idx+1, endIdx, params)
+        alpha = np.append(alpha, alpha_low)
+        r = np.append(r, r_low)
+        idx = np.append(idx, idx_low)
+        alpha = np.append(alpha, alpha_high)
+        r = np.append(r, r_high)
+        idx = np.append(idx, idx_high)
+    else:
+        alpha = np.append(alpha, new_alpha)
+        r = np.append(r, new_r)
+        idx = np.append(idx, (startIdx,endIdx))
 
     ########## Code ends here ##########
     return alpha, r, idx
@@ -140,7 +179,17 @@ def FindSplit(theta, rho, alpha, r, params):
         splitIdx: idx at which to split line (return -1 if it cannot be split).
     '''
     ########## Code starts here ##########
-
+    n = len(theta)
+    splitIdx = -1
+    greatest_dist = 0
+    for i in range(n):
+        this_dist = np.cos( theta[i] - alpha ) * rho[i] - r
+        if this_dist > greatest_dist and this_dist >= params['LINE_POINT_DIST_THRESHOLD']:
+            greatest_dist = this_dist
+            splitIdx = i
+        
+    if (splitIdx+1 < params['MIN_POINTS_PER_SEGMENT'] or n-(splitIdx+1) < params['MIN_POINTS_PER_SEGMENT']):
+        splitIdx = -1
     ########## Code ends here ##########
     return splitIdx
 
@@ -157,7 +206,21 @@ def FitLine(theta, rho):
         r: 'r' of best fit for range data (1 number) (m). Should be positive.
     '''
     ########## Code starts here ##########
+    n = len(theta)
+    A, B, C, D, E = 0,0,0,0,0
+    for i in range(n):
+        A = A + (rho[i]**2)*np.sin(2*theta[i])
+        B = B + (rho[i]**2)*np.sin(2*theta[i])
+        for j in range(n):
+            C = C + rho[i]*rho[j]*np.cos(theta[i])*np.sin(theta[j])
+            D = D + rho[i]*rho[j]*np.cos(theta[i]+theta[j])
+    
+    alpha = (1/2) * np.arctan2( (A-(2/n)*C) , (B-(1/n)*D) ) + (np.pi/2)
 
+    for i in range(n):
+        E = E + rho[i]*np.cos(theta[i]-alpha)
+
+    r = (1/n)*E
     ########## Code ends here ##########
     return alpha, r
 
@@ -183,7 +246,20 @@ def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
           merge. If it can be split, do not merge.
     '''
     ########## Code starts here ##########
-
+    for i in range(len(pointIdx)-1):
+        startindex = pointIdx[i,1]
+        endindex = pointIdx[i+1,2]
+        new_theta = theta[startindex:endindex+1]
+        new_rho = rho[startindex:endindex+1]
+        new_r, new_alpha = FitLine(new_theta,new_rho)
+        if -1 == FindSplit(new_theta, new_rho, new_alpha, new_r, params):
+            alphaOut = new_alpha
+            rOut = new_r
+            pointIdxOut = [startindex, endindex]
+            break
+    # alphaOut = alpha
+    # rOut = r
+    # pointIdxOut = pointIdx
     ########## Code ends here ##########
     return alphaOut, rOut, pointIdxOut
 
@@ -192,7 +268,7 @@ def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
 # ImportRangeData
 def ImportRangeData(filename):
 
-    data = np.genfromtxt('./RangeData/'+filename, delimiter=',')
+    data = np.genfromtxt('./Problem_2/RangeData/'+filename, delimiter=',')
     x_r = data[0, 0]
     y_r = data[0, 1]
     theta = data[1:, 0]
@@ -235,7 +311,7 @@ def main():
     ax = PlotRays(RangeData, ax)
     ax = PlotLines(segend, ax)
 
-    plt.show(ax)
+    plt.show()
 
 ############################################################
 
