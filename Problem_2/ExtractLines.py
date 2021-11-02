@@ -83,14 +83,14 @@ def ExtractLines(RangeData, params):
         segend[i, :] = np.hstack((x1, y1, x2, y2))
         seglen[i] = np.linalg.norm(segend[i, 0:2] - segend[i, 2:4])
 
-    # ### Filter Lines ###
-    # # Find and remove line segments that are too short
-    goodSegIdx = np.where((seglen >= params['MIN_SEG_LENGTH']) &
-                          (pointIdx[:, 1] - pointIdx[:, 0] >= params['MIN_POINTS_PER_SEGMENT']))[0]
-    pointIdx = pointIdx[goodSegIdx, :]
-    alpha = alpha[goodSegIdx]
-    r = r[goodSegIdx]
-    segend = segend[goodSegIdx, :]
+    # # ### Filter Lines ###
+    # # # Find and remove line segments that are too short
+    # goodSegIdx = np.where((seglen >= params['MIN_SEG_LENGTH']) &
+    #                       (pointIdx[:, 1] - pointIdx[:, 0] >= params['MIN_POINTS_PER_SEGMENT']))[0]
+    # pointIdx = pointIdx[goodSegIdx, :]
+    # alpha = alpha[goodSegIdx]
+    # r = r[goodSegIdx]
+    # segend = segend[goodSegIdx, :]
 
     # change back to scene coordinates
     segend[:, (0, 2)] = segend[:, (0, 2)] + x_r
@@ -124,9 +124,11 @@ def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
     alpha = np.zeros(0)
     idx = np.zeros((0, 2), dtype=np.int)
 
+    print('start@: ', startIdx, '   end@: ', endIdx)
+
     #isolate sub section of theta and rho
-    this_theta = theta[startIdx:endIdx]
-    this_rho = rho[startIdx:endIdx]
+    this_theta = idxFromTo(theta,startIdx,endIdx)
+    this_rho = idxFromTo(rho,startIdx,endIdx)
 
     #fit line and grab alpha and r
     new_alpha, new_r = FitLine( this_theta, this_rho )
@@ -172,27 +174,28 @@ def FindSplit(theta, rho, alpha, r, params):
     '''
     ########## Code starts here ##########
     n = len(theta)
-    if n <= 2*params['MIN_POINTS_PER_SEGMENT']:
+    greatest_dist = 0
+    this_dist = np.zeros(0)
+
+    if n < (2*params['MIN_POINTS_PER_SEGMENT'])-1:
         splitIdx = -1
         ### TOBEFIXED need to account for case when max is at the last index
     else:
-        greatest_dist = 0
-        this_dist = np.zeros(0)
-
         for i in range(n):
             this_dist = np.append(this_dist, abs(np.cos( theta[i] - alpha ) * rho[i] - r))
 
-        lower_bound = params['MIN_POINTS_PER_SEGMENT']
-        upper_bound = n - params['MIN_POINTS_PER_SEGMENT'] ##should this have a negative
-        check_dist = this_dist[lower_bound:upper_bound]
+        check_dist = removeEnds(this_dist,params['MIN_POINTS_PER_SEGMENT']-1,params['MIN_POINTS_PER_SEGMENT']-1)
         greatest_dist = np.max(check_dist)
-        splitIdx = lower_bound + np.where(check_dist==np.max(check_dist))[0][0]
-
+        
         if greatest_dist < params['LINE_POINT_DIST_THRESHOLD']:
             splitIdx = -1
+        else:
+            splitIdx = params['MIN_POINTS_PER_SEGMENT']-1 + np.where(check_dist==np.max(check_dist))[0][0]
 
+    ## for debugging
     if (splitIdx != -1):
         print('       split')
+        print('       size: ',n,', index: ',splitIdx)
     else:
         print('       did not split')
     
@@ -263,8 +266,9 @@ def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
     while i < n-1:
             startindex = pointIdx[i,0]
             endindex = pointIdx[i+1,1]
-            new_theta = theta[startindex:endindex+1]
-            new_rho = rho[startindex:endindex+1]
+            print('start@: ', startindex, '   end@: ', endindex)
+            new_theta = idxFromTo(theta,startindex,endindex)
+            new_rho = idxFromTo(rho,startindex,endindex)
             new_pointIdx = ([startindex, endindex])
             new_alpha, new_r = FitLine(new_theta,new_rho)
             merged = FindSplit(new_theta, new_rho, new_alpha, new_r, params)
@@ -313,9 +317,9 @@ def ImportRangeData(filename):
 ############################################################
 def main():
     # parameters for line extraction (mess with these!)
-    MIN_SEG_LENGTH = .05 #0.05 #for pose 1,3 #0.05 #for pose 2 # minimum length of each line segment (m)
-    LINE_POINT_DIST_THRESHOLD = .02 #0.05 #for pose 1,3 #0.05 #for pose 2 # max distance of pt from line to split
-    MIN_POINTS_PER_SEGMENT = 3 #2 #for pose 1,3 #3 #for pose 2 # minimum number of points per line segment
+    MIN_SEG_LENGTH = .1 #0.05 #for pose 1,3 #0.05 #for pose 2 # minimum length of each line segment (m)
+    LINE_POINT_DIST_THRESHOLD = .07 #0.05 #for pose 1,3 #0.05 #for pose 2 # max distance of pt from line to split
+    MIN_POINTS_PER_SEGMENT = 2 #2 #for pose 1,3 #3 #for pose 2 # minimum number of points per line segment
     MAX_P2P_DIST = .5 #.5 #for pose 1,3 #1 #for pose 2 # max distance between two adjent pts within a segment
 
     # Data files are formated as 'rangeData_<x_r>_<y_r>_N_pts.csv

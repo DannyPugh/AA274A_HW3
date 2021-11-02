@@ -6,7 +6,17 @@ def idxFromTo(Array, index_from, index_to):
 def removeEnds(Array, remove_from_start, remove_from_end):
     return Array[remove_from_start:len(Array)-remove_from_end]
 
-# #TEST HARNESS
+def removeIdx(Array,index):
+    return np.delete(Array,index)
+
+def replaceIdx(Array,index,replacement):
+    Array[index] = replacement
+    return Array
+
+# def idxAfterAdd(current_number_of_entries, number_of_entries_to_add):
+
+
+# # # #TEST HARNESS
 # A = np.array([1,2,3,4,5,6,7,8,9])
 # B = idxFromTo(A,1,4)
 # C = removeEnds(A,1,3)
@@ -14,3 +24,8 @@ def removeEnds(Array, remove_from_start, remove_from_end):
 # print(B)
 
 # print(C)
+
+# print(idxFromTo(A,8,8))
+
+# print(replaceIdx(A,4,324342))
+# print(removeIdx(A,0))
