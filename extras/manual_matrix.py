@@ -36,4 +36,15 @@ G = np.reshape(G,(i,j))
 print(G)        
 
 
+A = np.array([1,2,1])
+
+B = np.vstack(A)
+
+print(A)
+print(B)
+
+
+print(A*np.vstack(A))
+print(A*np.vstack(A)*A)
+
 

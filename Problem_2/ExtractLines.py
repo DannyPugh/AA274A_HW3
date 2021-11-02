@@ -12,6 +12,7 @@
 import numpy as np
 from numpy.lib.function_base import append
 from PlotFunctions import *
+from Utilities import *
 
 
 ############################################################
@@ -54,12 +55,13 @@ def ExtractLines(RangeData, params):
     LineBreak = np.hstack((np.where(rho_diff > params['MAX_P2P_DIST'])[0]+1, N_pts))
     startIdx = 0
     for endIdx in LineBreak:
+        print('###   FITTING & SPLITTING   ###')
         alpha_seg, r_seg, pointIdx_seg = SplitLinesRecursive(theta, rho, startIdx, endIdx, params)
         N_lines = r_seg.size
 
         ### Merge Lines ###
         if (N_lines > 1):
-            print('N more than 1')
+            print('###   MERGING   ###')
             alpha_seg, r_seg, pointIdx_seg = MergeColinearNeigbors(theta, rho, alpha_seg, r_seg, pointIdx_seg, params)
         r = np.append(r, r_seg)
         alpha = np.append(alpha, alpha_seg)
@@ -81,8 +83,8 @@ def ExtractLines(RangeData, params):
         segend[i, :] = np.hstack((x1, y1, x2, y2))
         seglen[i] = np.linalg.norm(segend[i, 0:2] - segend[i, 2:4])
 
-    ### Filter Lines ###
-    # Find and remove line segments that are too short
+    # ### Filter Lines ###
+    # # Find and remove line segments that are too short
     goodSegIdx = np.where((seglen >= params['MIN_SEG_LENGTH']) &
                           (pointIdx[:, 1] - pointIdx[:, 0] >= params['MIN_POINTS_PER_SEGMENT']))[0]
     pointIdx = pointIdx[goodSegIdx, :]
@@ -132,6 +134,7 @@ def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
     new_idx = FindSplit( this_theta, this_rho, new_alpha, new_r, params )
 
     if new_idx != -1:
+        print('Recursing')
         alpha_low, r_low, idx_low = SplitLinesRecursive( theta, rho, startIdx, startIdx + new_idx, params) 
         alpha_high, r_high, idx_high = SplitLinesRecursive( theta, rho, startIdx + new_idx, endIdx, params)
         alpha = np.append(alpha, alpha_low)
@@ -171,6 +174,7 @@ def FindSplit(theta, rho, alpha, r, params):
     n = len(theta)
     if n <= 2*params['MIN_POINTS_PER_SEGMENT']:
         splitIdx = -1
+        ### TOBEFIXED need to account for case when max is at the last index
     else:
         greatest_dist = 0
         this_dist = np.zeros(0)
@@ -188,9 +192,9 @@ def FindSplit(theta, rho, alpha, r, params):
             splitIdx = -1
 
     if (splitIdx != -1):
-        print('split')
+        print('       split')
     else:
-        print('did not split')
+        print('       did not split')
     
     ########## Code ends here ##########
 
@@ -268,7 +272,7 @@ def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
                 alphaOut = np.append(alphaOut, new_alpha)         #should these be single values?
                 rOut = np.append(rOut, new_r)                     #should these be single values?
                 pointIdxOut = np.vstack([pointIdxOut, new_pointIdx])   #should these be single values?
-                print('merge')
+                print('       merge')
                 i = i + 2
             else:
                 #if can be split keep split and add both tented entries to list
@@ -310,9 +314,9 @@ def ImportRangeData(filename):
 def main():
     # parameters for line extraction (mess with these!)
     MIN_SEG_LENGTH = .05 #0.05 #for pose 1,3 #0.05 #for pose 2 # minimum length of each line segment (m)
-    LINE_POINT_DIST_THRESHOLD = .1 #0.05 #for pose 1,3 #0.05 #for pose 2 # max distance of pt from line to split
-    MIN_POINTS_PER_SEGMENT = 2 #2 #for pose 1,3 #3 #for pose 2 # minimum number of points per line segment
-    MAX_P2P_DIST = 0.7 #.5 #for pose 1,3 #1 #for pose 2 # max distance between two adjent pts within a segment
+    LINE_POINT_DIST_THRESHOLD = .02 #0.05 #for pose 1,3 #0.05 #for pose 2 # max distance of pt from line to split
+    MIN_POINTS_PER_SEGMENT = 3 #2 #for pose 1,3 #3 #for pose 2 # minimum number of points per line segment
+    MAX_P2P_DIST = .5 #.5 #for pose 1,3 #1 #for pose 2 # max distance between two adjent pts within a segment
 
     # Data files are formated as 'rangeData_<x_r>_<y_r>_N_pts.csv
     # where x_r is the robot's x position
