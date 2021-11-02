@@ -17,14 +17,14 @@ def corr(F, I):
     """
     ########## Code starts here ##########
     I_row, I_col, I_dep = np.shape(I)
-    G = np.zeros([I_row,I_col,1])
+    G = np.zeros([I_row,I_col])
     row, col, dep = np.shape(F)
     #print(row)
     #print(col)
     #print(dep)
     row_pad = int(np.floor(row/2))
     col_pad = int(np.floor(col/2))
-    new_I = np.pad(I,((row_pad,row_pad),(col_pad,col_pad),(0,0)))
+    new_I = np.pad(I,((row_pad,row_pad),(col_pad,col_pad),(0,0)), mode="constant")
     #print(new_I)
 
     #f = np.reshape(F,(1,row*col*dep))
@@ -33,7 +33,7 @@ def corr(F, I):
         for j in range(I_col):
             #t = np.reshape(new_I[:,j:j+row,i:i+col])
             t = new_I[i:i+row,j:j+col,0:dep].flatten()
-            G[i,j,0] = np.sum(f*t)
+            G[i,j] = np.sum(f*t)
 
     return G
 
@@ -51,14 +51,14 @@ def norm_cross_corr(F, I):
     """
     ########## Code starts here ##########
     I_row, I_col, I_dep = np.shape(I)
-    G = np.zeros([I_row,I_col,1])
+    G = np.zeros([I_row,I_col])
     row, col, dep = np.shape(F)
     #print(row)
     #print(col)
     #print(dep)
     row_pad = int(np.floor(row/2))
     col_pad = int(np.floor(col/2))
-    new_I = np.pad(I,((row_pad,row_pad),(col_pad,col_pad),(0,0)))
+    new_I = np.pad(I,((row_pad,row_pad),(col_pad,col_pad),(0,0)), mode="constant")
     #print(new_I)
 
     #f = np.reshape(F,(1,row*col*dep))
@@ -67,7 +67,7 @@ def norm_cross_corr(F, I):
         for j in range(I_col):
             #t = np.reshape(new_I[:,j:j+row,i:i+col])
             t = new_I[i:i+row,j:j+col,0:dep].flatten()
-            G[i,j,0] = np.sum(f*t)/np.sum(np.linalg.norm(f)*np.linalg.norm(t))
+            G[i,j] = np.sum(f*t)/(np.linalg.norm(f)*np.linalg.norm(t))
 
     return G
     ########## Code ends here ##########
@@ -114,12 +114,12 @@ def main():
 
     for idx, filt in enumerate(color_filters):
         start = time.time()
-        #corr_img = corr(filt, test_card)
-        corr_img = norm_cross_corr(filt, test_card)
+        corr_img = corr(filt, test_card)
+        #corr_img = norm_cross_corr(filt, test_card)
         stop = time.time()
         print('Correlation function runtime:', stop - start, 's')
-        #show_save_corr_img("corr_img_filt%d.png" % idx, corr_img, filt)
-        show_save_corr_img("norm_corr_img_filt%d.png" % idx, corr_img, filt)
+        show_save_corr_img("corr_img_filt%d.png" % idx, corr_img, filt)
+        #show_save_corr_img("norm_corr_img_filt%d.png" % idx, corr_img, filt)
 
 
 if __name__ == "__main__":
