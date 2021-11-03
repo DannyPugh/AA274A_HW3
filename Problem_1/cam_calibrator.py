@@ -51,7 +51,7 @@ class CameraCalibrator:
 
         for i, file in enumerate(sorted(os.listdir(self.cal_img_path))):
             img = cv2.imread(
-                self.cal_img_path + "/" + file, 0
+                self.cal_img_path  "/"  file, 0
             )  # Load the image
             img_msg = self.c.br.cv2_to_imgmsg(
                 img, "mono8"
@@ -73,7 +73,7 @@ class CameraCalibrator:
                     left=0.02, right=0.98, top=0.98, bottom=0.02
                 )
                 fig.canvas.set_window_title(
-                    "Corner Extraction (Chessboard {0})".format(i + 1)
+                    "Corner Extraction (Chessboard {0})".format(i  1)
                 )
 
                 plt.show(block=False)
@@ -105,8 +105,10 @@ class CameraCalibrator:
         HINT: You MAY find the function np.meshgrid() useful.
         """
         ########## Code starts here ##########
-
-        ########## Code ends here ##########
+        Xg = [ np.array([self.d_square * i for j in range(self.n_corners_y) for i in range(self.n_corners_x) ]) for _ in u_meas ]
+        Yg = [ np.array([self.d_square * j for j in range(self.n_corners_y) for i in range(self.n_corners_x) ]) for _ in v_meas ]
+        corner_coordinates = (Xg, Yg)
+        ########## Code ends here #########
         return corner_coordinates
 
     def estimateHomography(self, u_meas, v_meas, X, Y):  # Zhang Appendix A
@@ -124,7 +126,14 @@ class CameraCalibrator:
         HINT: Some numpy functions that might come in handy are stack, vstack, hstack, column_stack, expand_dims, zeros_like, and ones_like.
         """
         ########## Code starts here ##########
-
+        M = np.stack([X, Y, np.ones(len(X))])
+        Z = np.zeros(M.shape)
+        L1 = np.vstack([M, Z, -u_meas * M])
+        L2 = np.vstack([Z, M, -v_meas * M])
+        L = np.hstack([L1, L2]).T
+        _, s, vT = np.linalg.svd(L)
+        h = vT[np.argmin(s)]
+        H = np.reshape(h, (3, 3))
         ########## Code ends here ##########
         return H
 
@@ -141,7 +150,34 @@ class CameraCalibrator:
         HINT: What is the size of V?
         """
         ########## Code starts here ##########
-
+        def v(h, i, j):
+            h_i = h[:, i - 1]
+            h_j = h[:, j - 1]
+            h_i1, h_i2, h_i3 = h_i
+            h_j1, h_j2, h_j3 = h_j
+            return np.array([h_i1 * h_j1,
+                             h_i1 * h_j2  h_i2 * h_j1,
+                             h_i2 * h_j2,
+                             h_i3 * h_j1  h_i1 * h_j3,
+                             h_i3 * h_j2  h_i2 * h_j3,
+                             h_i3 * h_j3])
+            pass
+        V_rows = []
+        for h in H:
+            V_rows.extend([v(h, 1, 2), v(h, 1, 1) - v(h, 2, 2)])
+        V = np.vstack(V_rows)
+        _, s, vT = np.linalg.svd(V)
+        b = vT[np.argmin(s)]
+        B11, B12, B22, B13, B23, B33 = list(b)
+        v0 = (B12 * B13 - B11 * B23)/(B11 * B22 - B12 ** 2)
+        l = B33 - (B13 ** 2  v0 * (B12 * B13 - B11 * B23)) / B11
+        a = np.sqrt(l / B11)
+        B = np.sqrt(l * B11 / (B11 * B22 - B12 **2))
+        g = -B12 * (a**2) * B / l
+        u0 = g * v0 / B - B13 * (a**2) / l
+        A = np.array([ [a, g, u0],
+                       [0, B, v0],
+                       [0, 0, 1] ])
         ########## Code ends here ##########
         return A
 
@@ -155,7 +191,24 @@ class CameraCalibrator:
             t: the translation vector
         """
         ########## Code starts here ##########
+        h_1 = H[:, 0]
+        h_2 = H[:, 1]
+        h_3 = H[:, 2]
 
+        r_1_ = np.linalg.solve(A, h_1)
+        r_1 = r_1_ / np.linalg.norm(r_1_)
+
+        r_2_ = np.linalg.solve(A, h_2)
+        r_2 = r_2_ / np.linalg.norm(r_1_)
+ 
+        r_3 = np.cross(r_1, r_2)
+
+        t_ = np.linalg.solve(A, h_3)
+        t = t_ / np.linalg.norm(r_1_)
+
+        Q = np.vstack([r_1, r_2, r_3]).T
+        u, _, vT = np.linalg.svd(Q)
+        R = u.dot(vT)
         ########## Code ends here ##########
         return R, t
 
@@ -172,7 +225,11 @@ class CameraCalibrator:
 
         """
         ########## Code starts here ##########
-
+        M = np.stack([X, Y, Z, np.ones(X.shape)])
+        Rt = np.column_stack([R, t])
+        m = np.dot(Rt, M)
+        x = m[0] / m[-1]
+        y = m[1] / m[-1]
         ########## Code ends here ##########
         return x, y
 
@@ -189,7 +246,11 @@ class CameraCalibrator:
             u, v: the coordinates in the ideal pixel image plane
         """
         ########## Code starts here ##########
-
+        M = np.stack([X, Y, Z, np.ones(X.shape)])
+        Rt = np.column_stack([R, t])
+        m = np.dot(A, np.dot(Rt, M))
+        u = m[0] / m[-1]
+        v = m[1] / m[-1]
         ########## Code ends here ##########
         return u, v
 
@@ -228,7 +289,7 @@ class CameraCalibrator:
 
         for i, file in enumerate(sorted(os.listdir(self.cal_img_path))):
             if i < n_disp_img:
-                img_dist = cv2.imread(self.cal_img_path + "/" + file, 0)
+                img_dist = cv2.imread(self.cal_img_path  "/"  file, 0)
                 img_undist_no_k = cv2.undistort(
                     img_dist, A, np.zeros(4), None, Anew_no_k
                 )
@@ -253,7 +314,7 @@ class CameraCalibrator:
                     left=0.02, right=0.98, top=0.98, bottom=0.02
                 )
                 fig.canvas.set_window_title(
-                    "Image Correction (Chessboard {0})".format(i + 1)
+                    "Image Correction (Chessboard {0})".format(i  1)
                 )
 
                 plt.show(block=False)
@@ -272,24 +333,24 @@ class CameraCalibrator:
         for p in range(min(self.n_chessboards, n_disp_img)):
             plt.clf()
             ax = plt.subplot(111)
-            ax.plot(u_meas[p], v_meas[p], "r+", label="Original")
+            ax.plot(u_meas[p], v_meas[p], "r", label="Original")
             u, v = self.transformWorld2PixImageUndist(
                 X[p], Y[p], np.zeros(X[p].size), R[p], t[p], A
             )
-            ax.plot(u, v, "b+", label="Linear Intrinsic Calibration")
+            ax.plot(u, v, "b", label="Linear Intrinsic Calibration")
 
             box = ax.get_position()
             ax.set_position(
                 [
                     box.x0,
-                    box.y0 + box.height * 0.15,
+                    box.y0  box.height * 0.15,
                     box.width,
                     box.height * 0.85,
                 ]
             )
             ax.axis([0, self.w_pixels, 0, self.h_pixels])
             plt.gca().set_aspect("equal", adjustable="box")
-            plt.title("Chessboard {0}".format(p + 1))
+            plt.title("Chessboard {0}".format(p  1))
             ax.legend(
                 loc="lower center",
                 bbox_to_anchor=(0.5, -0.3),
@@ -358,7 +419,7 @@ class CameraCalibrator:
 
         for i, file in enumerate(sorted(os.listdir(self.cal_img_path))):
             if i < n_disp_img:
-                img = cv2.imread(self.cal_img_path + "/" + file, 0)
+                img = cv2.imread(self.cal_img_path  "/"  file, 0)
                 axim.imshow(img, cmap="gray")
                 axim.axis("off")
 
@@ -383,7 +444,7 @@ class CameraCalibrator:
                         verts[p][0][0][0],
                         verts[p][0][0][1],
                         verts[p][0][0][2],
-                        "{0}".format(p + 1),
+                        "{0}".format(p  1),
                     )
                     plt.show(block=False)
 
@@ -400,7 +461,7 @@ class CameraCalibrator:
 
                 plt.tight_layout()
                 fig.canvas.set_window_title(
-                    "Estimated Board Locations (Chessboard {0})".format(i + 1)
+                    "Estimated Board Locations (Chessboard {0})".format(i  1)
                 )
 
                 plt.show(block=False)
@@ -445,7 +506,7 @@ class CameraCalibrator:
 
         for i, file in enumerate(sorted(os.listdir(self.cal_img_path))):
             if i < n_disp_img:
-                img_dist = cv2.imread(self.cal_img_path + "/" + file, 0)
+                img_dist = cv2.imread(self.cal_img_path  "/"  file, 0)
                 img_undist_no_k = cv2.undistort(
                     img_dist, A, np.zeros(4), None, Anew_no_k
                 )
@@ -470,7 +531,7 @@ class CameraCalibrator:
                     left=0.02, right=0.98, top=0.98, bottom=0.02
                 )
                 fig.canvas.set_window_title(
-                    "Image Correction (Chessboard {0})".format(i + 1)
+                    "Image Correction (Chessboard {0})".format(i  1)
                 )
 
                 plt.show(block=False)
@@ -487,11 +548,11 @@ class CameraCalibrator:
         self.c.P = np.column_stack((np.eye(3), np.zeros(3)))
         self.c.size = [self.w_pixels, self.h_pixels]
 
-        filename = self.name + "_calibration.yaml"
+        filename = self.name  "_calibration.yaml"
         with open(filename, "w") as f:
             f.write(self.c.yaml())
 
-        print("Calibration exported successfully to " + filename)
+        print("Calibration exported successfully to "  filename)
 
     def getMeasuredPixImageCoord(self):
         u_meas = []
