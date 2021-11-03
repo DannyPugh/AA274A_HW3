@@ -13,6 +13,9 @@ def replaceIdx(Array,index,replacement):
     Array[index] = replacement
     return Array
 
+def getEndIdx(Array):
+    return len(Array)-1
+
 # def idxAfterAdd(current_number_of_entries, number_of_entries_to_add):
 
 
@@ -29,3 +32,5 @@ def replaceIdx(Array,index,replacement):
 
 # print(replaceIdx(A,4,324342))
 # print(removeIdx(A,0))
+
+# print(getEndIdx(A))

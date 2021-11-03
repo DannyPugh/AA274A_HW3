@@ -1,6 +1,5 @@
 import numpy as np
 from numpy.lib.function_base import append
-from PlotFunctions import *
 
 #F = np.array([[0,0,0],[0,1,0],[0,0,0]])
 #F = np.array([[0,0,0],[0,0,1],[0,0,0]])
@@ -47,4 +46,37 @@ print(B)
 print(A*np.vstack(A))
 print(A*np.vstack(A)*A)
 
+C = np.array([1,2,3])
+D = np.array([4,5,6])
 
+print(C)
+print(np.vstack(D))
+
+print(C*np.vstack(D))
+
+print('################################')
+
+
+filt4 =           np.array([[1,  4,  7,  4, 1],
+                            [4, 16, 26, 16, 4],
+                            [7, 26, 41, 26, 7],
+                            [4, 16, 26, 16, 4],
+                            [1,  4,  7,  4, 1]])
+
+
+filt1 = np.zeros((3, 3))
+filt1[1, 1] = 1
+
+# _, single_value ,_ = np.linalg.svd(filt4)
+print(filt1)
+print(np.linalg.matrix_rank(filt1))
+u, s, vh = np.linalg.svd(filt1)
+np.dot(u[:, :3] * s, vh)
+print(single_value)
+print(single_value.flatten()*single_value)
+
+
+
+
+
+##########################

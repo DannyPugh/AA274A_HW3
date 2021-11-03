@@ -138,7 +138,7 @@ def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
     if new_idx != -1:
         print('Recursing')
         alpha_low, r_low, idx_low = SplitLinesRecursive( theta, rho, startIdx, startIdx + new_idx, params) 
-        alpha_high, r_high, idx_high = SplitLinesRecursive( theta, rho, startIdx + new_idx, endIdx, params)
+        alpha_high, r_high, idx_high = SplitLinesRecursive( theta, rho, startIdx + new_idx + 1ß , endIdx, params)
         alpha = np.append(alpha, alpha_low)
         r = np.append(r, r_low)
         idx = np.vstack([idx, idx_low]) 
@@ -190,7 +190,10 @@ def FindSplit(theta, rho, alpha, r, params):
         if greatest_dist < params['LINE_POINT_DIST_THRESHOLD']:
             splitIdx = -1
         else:
-            splitIdx = params['MIN_POINTS_PER_SEGMENT']-1 + np.where(check_dist==np.max(check_dist))[0][0]
+            if getEndIdx(check_dist) == np.where(check_dist==np.max(check_dist))[0][0]:
+                splitIdx = params['MIN_POINTS_PER_SEGMENT']-1 + np.where(check_dist==np.max(check_dist))[0][0] -1
+            else:
+                splitIdx = params['MIN_POINTS_PER_SEGMENT']-1 + np.where(check_dist==np.max(check_dist))[0][0]
 
     ## for debugging
     if (splitIdx != -1):
@@ -320,7 +323,7 @@ def main():
     MIN_SEG_LENGTH = .1 #0.05 #for pose 1,3 #0.05 #for pose 2 # minimum length of each line segment (m)
     LINE_POINT_DIST_THRESHOLD = .07 #0.05 #for pose 1,3 #0.05 #for pose 2 # max distance of pt from line to split
     MIN_POINTS_PER_SEGMENT = 2 #2 #for pose 1,3 #3 #for pose 2 # minimum number of points per line segment
-    MAX_P2P_DIST = .5 #.5 #for pose 1,3 #1 #for pose 2 # max distance between two adjent pts within a segment
+    MAX_P2P_DIST = 4 #.5 #for pose 1,3 #1 #for pose 2 # max distance between two adjent pts within a segment
 
     # Data files are formated as 'rangeData_<x_r>_<y_r>_N_pts.csv
     # where x_r is the robot's x position
