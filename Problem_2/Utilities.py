@@ -1,6 +1,7 @@
 import numpy as np
 
 def idxFromTo(Array, index_from, index_to):
+    # includes from and to indexes
     return Array[index_from:index_to+1]
 
 def removeEnds(Array, remove_from_start, remove_from_end):
