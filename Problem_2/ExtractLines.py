@@ -10,8 +10,8 @@
 
 # Imports
 import numpy as np
-from numpy.lib.function_base import append
-from numpy.lib.shape_base import split
+#from numpy.lib.function_base import append
+#from numpy.lib.shape_base import split
 from PlotFunctions import *
 
 
@@ -55,17 +55,17 @@ def ExtractLines(RangeData, params):
     LineBreak = np.hstack((np.where(rho_diff > params['MAX_P2P_DIST'])[0]+1, N_pts))
     startIdx = 0
     for endIdx in LineBreak:
-        ##FOR DEBUGGING
-        #print('###   FITTING & SPLITTING   ###')
+        #FOR DEBUGGING
+        print('###   FITTING & SPLITTING   ###')
         alpha_seg, r_seg, pointIdx_seg = SplitLinesRecursive(theta, rho, startIdx, endIdx, params)
         N_lines = r_seg.size
 
         ### Merge Lines ###
         if (N_lines > 1):
-            ##FOR DEBUGGING
-            #print('###   MERGING   ###')
+            #FOR DEBUGGING
+            print('###   MERGING   ###')
             alpha_seg, r_seg, pointIdx_seg = MergeColinearNeigbors(theta, rho, alpha_seg, r_seg, pointIdx_seg, params)
-        print('r_seg:',r_seg,'   alpha_seg:',alpha_seg,'    pointIdx_seg:',pointIdx_seg)
+        #print('r_seg:',r_seg,'   alpha_seg:',alpha_seg,'    pointIdx_seg:',pointIdx_seg)
         r = np.append(r, r_seg)
         alpha = np.append(alpha, alpha_seg)
         pointIdx = np.vstack((pointIdx, pointIdx_seg))
@@ -138,8 +138,11 @@ def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
     new_idx = FindSplit( this_theta, this_rho, new_alpha, new_r, params )
 
     if new_idx != -1:
-        ##FOR DEBUGGING
-        print('Recursing')
+        # ##FOR DEBUGGING
+        # print('Recursing')
+        # print('start index:', startIdx)
+        # print('split index:', startIdx+new_idx)
+        # print('end index:', endIdx)
         alpha_low, r_low, idx_low = SplitLinesRecursive( theta, rho, startIdx, startIdx + new_idx, params) 
         alpha_high, r_high, idx_high = SplitLinesRecursive( theta, rho, startIdx + new_idx, endIdx, params)
         alpha = np.append(alpha, alpha_low)
@@ -153,6 +156,7 @@ def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
         r = np.append(r, new_r)
         idx = np.vstack([idx, (startIdx,endIdx)])
 
+    print('    SLR idxs:', idx)
     ########## Code ends here ##########
     return alpha, r, idx
 ############################################################
@@ -177,8 +181,8 @@ def FindSplit(theta, rho, alpha, r, params):
     '''
     ########## Code starts here ##########
     n = len(theta)
-    print(n)
-    print(params['MIN_POINTS_PER_SEGMENT'])
+    #print(n)
+    #print(params['MIN_POINTS_PER_SEGMENT'])
     if n < 2*params['MIN_POINTS_PER_SEGMENT']:
         splitIdx = -1
         ### TOBEFIXED need to account for case when max is at the last index
@@ -189,29 +193,29 @@ def FindSplit(theta, rho, alpha, r, params):
         for i in range(n):
             this_dist = np.append(this_dist, abs(np.cos( theta[i] - alpha ) * rho[i] - r))
 
-        lower_bound = params['MIN_POINTS_PER_SEGMENT']-1
-        print(lower_bound)
+        lower_bound = params['MIN_POINTS_PER_SEGMENT']
+        #print(lower_bound)
         upper_bound = n - params['MIN_POINTS_PER_SEGMENT']+1 ##should this have a negative
-        print(upper_bound)
+        #print(upper_bound)
         check_dist = this_dist[lower_bound:upper_bound]
-        print(this_dist)
-        print(check_dist)
+        #print(this_dist)
+        #print(check_dist)
         greatest_dist = np.max(check_dist)
-        print(greatest_dist)
+        #print(greatest_dist)
         if n - params['MIN_POINTS_PER_SEGMENT'] == lower_bound + np.where(check_dist==np.max(check_dist))[0][0]:
-            splitIdx = lower_bound + np.where(check_dist==np.max(check_dist))[0][0] -1
+            splitIdx = lower_bound + np.where(check_dist==np.max(check_dist))[0][0]
         else:
-            splitIdx = lower_bound + np.where(check_dist==np.max(check_dist))[0][0] +1
+            splitIdx = lower_bound + np.where(check_dist==np.max(check_dist))[0][0]
 
-        if greatest_dist < params['LINE_POINT_DIST_THRESHOLD']:
+        if greatest_dist <= params['LINE_POINT_DIST_THRESHOLD']:
             splitIdx = -1
 
-        print(splitIdx)
-    ##FOR DEBUGGING
-    if (splitIdx != -1):
-        print('       split')
-    else:
-        print('       did not split')
+        #print(splitIdx)
+    # ##FOR DEBUGGING
+    # if (splitIdx != -1):
+    #     print('       split')
+    # else:
+    #     print('       did not split')
     
     ########## Code ends here ##########
 
@@ -269,45 +273,81 @@ def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
           merge. If it can be split, do not merge.
     '''
     ########## Code starts here ##########
-    # theta, rho, alpha, r, pointIdx, params
-    alphaOut = np.zeros(0)              #create empty array to return new set of alphas
-    rOut = np.zeros(0)                  #create empty array to return new set of r
-    pointIdxOut = np.zeros((0,2), dtype = int)  
+    # print('point index initial:', pointIdx)
+    # # theta, rho, alpha, r, pointIdx, params
+    # alphaOut = np.zeros(0)              #create empty array to return new set of alphas
+    # rOut = np.zeros(0)                  #create empty array to return new set of r
+    # pointIdxOut = np.zeros((0,2), dtype = int)  
     
-    n=len(alpha)
+    # n=len(alpha)
+    # i = 0
+    
+    # while i < n-1:
+    #         startindex = pointIdx[i,0]
+    #         endindex = pointIdx[i+1,1]
+    #         new_theta = theta[startindex:endindex]
+    #         new_rho = rho[startindex:endindex]
+    #         new_pointIdx = ([startindex, endindex])
+    #         #print('start index: ', startindex, '    end index:', endindex)
+    #         new_alpha, new_r = FitLine(new_theta,new_rho)
+    #         merged = FindSplit(new_theta, new_rho, new_alpha, new_r, params)
+    #         if -1 == merged:
+    #             alphaOut = np.append(alphaOut, new_alpha)         #should these be single values?
+    #             rOut = np.append(rOut, new_r)                     #should these be single values?
+    #             pointIdxOut = np.vstack([pointIdxOut, new_pointIdx])   #should these be single values?
+    #             #FOR DEBUGGING
+    #             print('       merge')
+    #             print('       New Index:',new_pointIdx)
+    #             if i == n-3:
+    #                 new_alpha = (alpha[i+2]) 
+    #                 new_r = (r[i+2])
+    #                 alphaOut = np.append(alphaOut, new_alpha)         #should these be single values?
+    #                 rOut = np.append(rOut, new_r)                     #should these be single values?
+    #                 pointIdxOut = np.vstack([pointIdxOut, pointIdx[i+2]])
+    #             i = i + 2                
+    #         else:
+    #             #if can be split keep split and add both tented entries to list
+    #             #pause here to check if alpha is of the same size as pointIdx
+    #             new_alpha = (alpha[i]) 
+    #             new_r = (r[i])
+    #             alphaOut = np.append(alphaOut, new_alpha)         #should these be single values?
+    #             rOut = np.append(rOut, new_r)                     #should these be single values?
+    #             pointIdxOut = np.vstack([pointIdxOut, pointIdx[i]])
+    #             #if this is second to last group and not combined then add last entry
+    #             if i == n-2:
+    #                 new_alpha = (alpha[i+1]) 
+    #                 new_r = (r[i+1])
+    #                 alphaOut = np.append(alphaOut, new_alpha)         #should these be single values?
+    #                 rOut = np.append(rOut, new_r)                     #should these be single values?
+    #                 pointIdxOut = np.vstack([pointIdxOut, pointIdx[i+1]])
+    #             i = i + 1
+
+    # print('   Merge idxs:\n',pointIdxOut)
+
     i = 0
+    num_of_pointIdx = len(pointIdx)-1
+    while i < num_of_pointIdx:
+        start = pointIdx[i,0]
+        end = pointIdx[i+1,1]
+        this_theta = theta[start:end]
+        this_rho = rho[start:end]
+        this_alpha, this_r = FitLine(this_theta, this_rho)
+        this_splitIdx = FindSplit(this_theta, this_rho, this_alpha, this_r, params)
+        if this_splitIdx == -1:
+            alpha[i] = this_alpha
+            r[i] = this_r
+            pointIdx[i] = (start, end) 
+            alpha = np.delete(alpha, i+1)
+            r = np.delete(r,i+1)
+            pointIdx = np.delete(pointIdx,i+1,0)
+            num_of_pointIdx = len(pointIdx)-1
+        else:
+            i = i + 1
     
-    while i < n-1:
-            startindex = pointIdx[i,0]
-            endindex = pointIdx[i+1,1]
-            new_theta = theta[startindex:endindex+1]
-            new_rho = rho[startindex:endindex+1]
-            new_pointIdx = ([startindex, endindex])
-            new_alpha, new_r = FitLine(new_theta,new_rho)
-            merged = FindSplit(new_theta, new_rho, new_alpha, new_r, params)
-            if -1 == merged:
-                alphaOut = np.append(alphaOut, new_alpha)         #should these be single values?
-                rOut = np.append(rOut, new_r)                     #should these be single values?
-                pointIdxOut = np.vstack([pointIdxOut, new_pointIdx])   #should these be single values?
-                ##FOR DEBUGGING
-                #print('       merge')
-                i = i + 2
-            else:
-                #if can be split keep split and add both tented entries to list
-                #pause here to check if alpha is of the same size as pointIdx
-                new_alpha = (alpha[i]) 
-                new_r = (r[i])
-                alphaOut = np.append(alphaOut, new_alpha)         #should these be single values?
-                rOut = np.append(rOut, new_r)                     #should these be single values?
-                pointIdxOut = np.vstack([pointIdxOut, pointIdx[i]])
-                #if this is second to last group and not combined then add last entry
-                if i == n-2:
-                    new_alpha = (alpha[i+1]) 
-                    new_r = (r[i+1])
-                    alphaOut = np.append(alphaOut, new_alpha)         #should these be single values?
-                    rOut = np.append(rOut, new_r)                     #should these be single values?
-                    pointIdxOut = np.vstack([pointIdxOut, pointIdx[i+1]])
-                i = i + 1
+    alphaOut = alpha
+    rOut = r
+    pointIdxOut = pointIdx
+
     ########## Code ends here ##########
     return alphaOut, rOut, pointIdxOut
 
@@ -332,18 +372,18 @@ def ImportRangeData(filename):
 def main():
     # parameters for line extraction (mess with these!)
     MIN_SEG_LENGTH = .05 #.05 #0.05 #for pose 1,3 #0.05 #for pose 2 # minimum length of each line segment (m)
-    LINE_POINT_DIST_THRESHOLD = .02 #.07 #0.05 #for pose 1,3 #0.05 #for pose 2 # max distance of pt from line to split
-    MIN_POINTS_PER_SEGMENT = 4 #2 #2 #for pose 1,3 #3 #for pose 2 # minimum number of points per line segment
-    MAX_P2P_DIST = 1 #.4 #.5 #for pose 1,3 #1 #for pose 2 # max distance between two adjent pts within a segment
+    LINE_POINT_DIST_THRESHOLD = .01 #.07 #0.05 #for pose 1,3 #0.05 #for pose 2 # max distance of pt from line to split
+    MIN_POINTS_PER_SEGMENT = 2 #2 #2 #for pose 1,3 #3 #for pose 2 # minimum number of points per line segment
+    MAX_P2P_DIST = .5 #.4 #.5 #for pose 1,3 #1 #for pose 2 # max distance between two adjent pts within a segment
 
     # Data files are formated as 'rangeData_<x_r>_<y_r>_N_pts.csv
     # where x_r is the robot's x position
     #       y_r is the robot's y position
     #       N_pts is the number of beams (e.g. 180 -> beams are 2deg apart)
 
-    filename = 'rangeData_5_5_180.csv'
+    #filename = 'rangeData_5_5_180.csv'
     #filename = 'rangeData_4_9_360.csv'
-    #filename = 'rangeData_7_2_90.csv'
+    filename = 'rangeData_7_2_90.csv'
 
     # Import Range Data
     RangeData = ImportRangeData(filename)

@@ -7,11 +7,13 @@ def idxFromTo(Array, index_from, index_to):
 def removeEnds(Array, remove_from_start, remove_from_end):
     return Array[remove_from_start:len(Array)-remove_from_end]
 
+
+
 # #TEST HARNESS
-# A = np.array([1,2,3,4,5,6,7,8,9])
-# B = idxFromTo(A,1,4)
-# C = removeEnds(A,1,3)
+A = np.array([1,2,3,4,5,6,7,8,9])
+B = idxFromTo(A,1,4)
+C = removeEnds(A,1,3)
 
-# print(B)
+print(B)
 
-# print(C)
+print(C)

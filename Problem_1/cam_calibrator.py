@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-import pdb
+#import pdb
 import os
-import sys
+#import sys
 
 import cv2
 import matplotlib.pyplot as plt
